@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Animation Timeline Visualizer Demo</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/SAPTARSHI-coder/EaseMotion-css@main/easemotion.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Animation Timeline Visualizer Demo</h1>
+  <select id="animSelect">
+    <!-- Options will be populated by script -->
+  </select>
+  <div class="preview visualizer-container">
+    <div id="demoBox" class="ease-fade-in" style="width:150px;height:150px;background:#7c3aed;margin:auto;"></div>
+    <div class="timeline"><div class="delay-segment" style="width:0%;"></div><div class="playhead" style="left:0%;"></div></div>
+    <div class="controls">
+      <button id="playBtn">Play</button>
+      <button id="pauseBtn">Pause</button>
+      <input type="range" id="speedRange" min="0.5" max="2" step="0.1" value="1" />
+    </div>
+    <pre class="code-snippet" id="codeSnippet"></pre>
+  </div>
+
+  <script>
+    // Populate animation options from known classes (simple subset)
+    const animations = [
+      'ease-fade-in',
+      'ease-slide-up',
+      'ease-bounce',
+      'ease-hover-grow'
+    ];
+    const select = document.getElementById('animSelect');
+    animations.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a;
+      opt.textContent = a;
+      select.appendChild(opt);
+    });
+
+    const demoBox = document.getElementById('demoBox');
+    const playBtn = document.getElementById('playBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const speedRange = document.getElementById('speedRange');
+    const playhead = document.querySelector('.playhead');
+    const delaySeg = document.querySelector('.delay-segment');
+    const codeSnippet = document.getElementById('codeSnippet');
+
+    let animDuration = 0;
+    let animDelay = 0;
+    let animStartTime = null;
+    let rafId;
+
+    function updateMetrics() {
+      const style = getComputedStyle(demoBox);
+      animDuration = parseFloat(style.animationDuration) * 1000 || 0;
+      animDelay = parseFloat(style.animationDelay) * 1000 || 0;
+      // update timeline UI
+      const total = animDuration + animDelay;
+      const delayPct = total ? (animDelay / total) * 100 : 0;
+      delaySeg.style.width = delayPct + '%';
+    }
+
+    function applyAnimation(cls) {
+      demoBox.className = cls;
+      updateMetrics();
+      codeSnippet.textContent = `<div class="${cls}"></div>`;
+    }
+
+    select.addEventListener('change', () => applyAnimation(select.value));
+    // initialize
+    applyAnimation(select.value);
+
+    function step(timestamp) {
+      if (!animStartTime) animStartTime = timestamp;
+      const elapsed = (timestamp - animStartTime) * speedRange.value;
+      const total = animDuration + animDelay;
+      const pct = total ? (elapsed / total) * 100 : 0;
+      playhead.style.left = Math.min(pct, 100) + '%';
+      if (elapsed < total) {
+        rafId = requestAnimationFrame(step);
+      }
+    }
+
+    playBtn.onclick = () => {
+      cancelAnimationFrame(rafId);
+      animStartTime = null;
+      rafId = requestAnimationFrame(step);
+    };
+    pauseBtn.onclick = () => {
+      cancelAnimationFrame(rafId);
+    };
+  </script>
+</body>
+</html>
